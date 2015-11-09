@@ -2,8 +2,8 @@
  * Created by simon on 07/11/2015.
  */
 class user {
-  var name = "";
-  var password = ""
+  private var name = "";
+  private var password = ""
 
   def setUsername(n:String): Unit ={
     name = n;

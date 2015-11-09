@@ -133,7 +133,6 @@ object server{
                   }
                 //handle new message
                 case "MESSAGE:" =>
-                  println("New Message")
                   handleMessage(temp(0) + " " + temp(1) + " says: " + temp(2))
                 //handle leaving a chat room
                 case "LEAVE_CHATROOM:" =>
@@ -145,6 +144,7 @@ object server{
             }
             handleMessage("IM_STILL_HERE:")
           }// end of while
+          println("stopped while")
         } catch {
           case s: SocketException => println("User "+myUser+" the plug")
         }
