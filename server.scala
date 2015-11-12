@@ -115,6 +115,7 @@ object server{
           try{
             sockets = serverSocket.accept() :: sockets
             if (!sockets.isEmpty){
+              println("New Client requested to connect")
               threadPool.execute(new Worker(sockets.head)) // allocate a new Worker a Socket
             }
             else println("Empty socket list")
@@ -186,7 +187,7 @@ object server{
                 handleMessage("This shouldn't have happened")
               }//elsif
             }//if
-          //  println("Not getting anything")
+          //  println("Not gettin any")
           }// end of while
 
 
@@ -194,6 +195,8 @@ object server{
           case s: SocketException => println("User pulled the plug")
         }
       }
+
+
       def handleKILL():Unit={
         println(Thread.currentThread.getName() + " is shutting down\n")
         shutdownServer() // call the shut down method
@@ -214,34 +217,45 @@ object server{
         var temp1 = ""
         var username: Array[String] = null
 
+        // Collect the rest of the messages for joining
         while(!temp1.contains("CLIENT_NAME:")) {
           temp1 = in.readLine()
           username = temp1.split(":")
-          recvTemp = recvTemp ++  temp1 ++"\n"
+          recvTemp = recvTemp ++  temp1
         }
-
+        // server prints out what it gets
+        println(recvTemp)
+        // make a temporary user
         val tempUser = new User
         tempUser.setUsername(username(1))
         tempUser.setJoinID(clientID)
+        // add them to the user list, no error checking yet.
         users = tempUser :: users
-        
+
+        // create a temp chatroom
         var chat: Chatroom = null
 
+        // if there's no chatroom associated with that name, then make it
+        // otherwise get that chatroom
         if(!checkRoom(temp(1))) {
+          println("Made a new Chatroom")
           chat = new Chatroom(temp(1),roomID)
           chatrooms = chat :: chatrooms
         }
         else{
+          println("Got existing Chatroom")
           chat = getChatroom(temp(1))
         }
 
+        // tell the user they connected
         out.println("JOINED_CHATROOM:"+temp(1))
         out.println("SERVER_IP:"+socket.getLocalAddress().toString().drop(1))
-        out.println("PORT:"+socket.getPort)
+        out.println("PORT:"+serverSocket.getLocalPort)
         out.println("ROOM_REF:"+roomID)
         out.println("JOIN_ID:"+clientID)
         out.flush()
 
+        // add the user's socket to the chat and forward on the message
         chat.addUser(socket)
         chat.forwardMessage(username(1),username(1) +" has joined this chatroom.")
 
@@ -251,6 +265,7 @@ object server{
         println("Sent Join Messages")
       }
 
+      // For hadnling messages sent to the server
       def handleCHAT():Unit={
         var temp = recv.split(":")
         var lines: List[String] = List()
@@ -259,14 +274,14 @@ object server{
         var temp1 = ""
         while(!temp1.contains("MESSAGE:")) {
           temp1 = in.readLine()
-          lines = temp1 ++"\n" :: lines
+          lines = temp1 :: lines
         }
         val request = lines.mkString
         println(request)
         println("")
       }
 
-
+      // Handles the LEAVE_CHATROOM requests
       def handleLeave():Unit={
         println("Got Leave Messages")
         var temp = recv.split(":")
@@ -280,23 +295,23 @@ object server{
           username = temp1.split(":")
           recvTemp = recvTemp ++  temp1 ++"\n"
         }
-
+        println(recvTemp)
         val chat = getChatroom(roomName)
         val userID = fetchUserID(username(1))
+        chat.forwardMessage(username(1),username(1) +" has left this chatroom.")
+        chat.userDisconnect(username(1),userID)
 
         out.println("LEFT_CHATROOM:"+roomName)
         out.println("JOIN_ID:"+userID)
         out.flush
 
-        chat.forwardMessage(username(1),username(1) +" has left this chatroom.")
-        chat.userDisconnect(username(1),userID)
         println("Sent Leave Messages")
 
       }
     }
 
 
-
+    // prints a message to all sockets
     def handleMessage(message:String): Unit ={
       for (s <- sockets) {
         val outputStream = s.getOutputStream()
@@ -306,6 +321,7 @@ object server{
       }
     }
 
+    // gets a name from an ID passed
     def fetchUserID(name : String) : Int = {
       for( u <- users){
         if(u.getUsername == name) return u.getJoinID
@@ -330,6 +346,7 @@ object server{
     }
   }
 
+// starts the server, must be satered with command line parameters for the port
   def main(args: Array[String]){
     try{
       new Server(args(0).toInt).run()
