@@ -302,14 +302,16 @@ object server{
         println(lines)
         // create a temp chatroom
         var chat: Chatroom = null
-        println(temp(1))
         // if there's no chatroom associated with that name, then make it
         // otherwise get that chatroom
         val id = temp(1).drop(1).toInt
+        val linesSplit = lines.split(":")
+        val client = linesSplit(5).drop(1)
+        println(client)
         if(checkRoomID(id)) {
           println("Got existing Chatroom")
           chat = getChatroomFromID(id)
-          chat.forwardMessage(temp(1),message(1))
+          chat.forwardMessage(client,message(1))
           println("Sent Chat message")
         }
 
